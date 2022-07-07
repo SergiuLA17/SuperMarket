@@ -11,7 +11,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClientException;
+
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 
 @Controller
@@ -20,14 +22,14 @@ public class MainController {
     SuperMarketService service;
     @Autowired
     ErrorMessage errorMessage;
+    Logger logger = LoggerFactory.getLogger(MainController.class);
 
     @RequestMapping(method = {RequestMethod.POST, RequestMethod.GET}, value = "/getProduct")
-    public String sendRequestToStorehouse(@ModelAttribute("name") String name, Model model) {
-        Logger logger = LoggerFactory.getLogger(MainController.class);
+    public String sendRequestToStorehouse(@ModelAttribute("name") String name, @ModelAttribute("name") String quantity, Model model) {
 
         ResponseEntity<String> response = null;
         try {
-            response = service.sendRequestToStorehouse(name);
+            response = service.sendRequestToStorehouse(name, quantity);
             model.addAttribute("message", service.getResponseFromStorehouse(response));
             logger.info(String.valueOf(service.getResponseFromStorehouse(response)));
         } catch (JsonProcessingException e) {
@@ -40,5 +42,15 @@ public class MainController {
             }
         }
         return "getProduct";
+    }
+
+    @RequestMapping(method = {RequestMethod.POST, RequestMethod.GET}, value = "/1000purchases")
+    public String send1000PurchasesRequest() {
+
+        for (int i = 0; i < 1000; i++) {
+            service.putRandomParamInRequest(i);
+        }
+
+        return "done";
     }
 }
