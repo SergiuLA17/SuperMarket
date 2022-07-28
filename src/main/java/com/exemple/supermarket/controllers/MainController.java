@@ -1,47 +1,42 @@
 package com.exemple.supermarket.controllers;
 
-import com.exemple.supermarket.exception.ErrorMessage;
+import com.exemple.supermarket.exception.ProductNotfoundException;
 import com.exemple.supermarket.service.SuperMarketService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestClientException;
 
-import java.net.ConnectException;
-import java.util.ArrayList;
+import java.util.Optional;
 
 
 @Controller
 public class MainController {
     @Autowired
     SuperMarketService service;
-    @Autowired
-    ErrorMessage errorMessage;
+
     Logger logger = LoggerFactory.getLogger(MainController.class);
+    private int count = 0;
 
-    @RequestMapping(method = {RequestMethod.POST, RequestMethod.GET}, value = "/getProduct")
-    public String sendRequestToStorehouse(@ModelAttribute("name") String name, @ModelAttribute("name") String quantity, Model model) {
+    @RequestMapping(method = {RequestMethod.POST, RequestMethod.GET}, value = "/getProductFromStorehouse")
+    public synchronized ResponseEntity sendRequestToStorehouse(@RequestParam("name") String name, @RequestParam("quantity") String quantity) throws InterruptedException, JsonProcessingException {
+        count++;
+        Thread.currentThread().setName("Buyer " + count);
 
-        ResponseEntity<String> response = null;
-        try {
-            response = service.sendRequestToStorehouse(name, quantity);
-            model.addAttribute("message", service.getResponseFromStorehouse(response));
-            logger.info(String.valueOf(service.getResponseFromStorehouse(response)));
-        } catch (JsonProcessingException e) {
-            model.addAttribute("message", errorMessage.getErrorMessage(response));
+        ResponseEntity<String> response = service.sendRequestToStorehouse(name, quantity);
 
-        } catch (RestClientException e) {
-            if (e.getCause() instanceof ConnectException) {
-                model.addAttribute("message", "Failed to connect to the server. Contact administrator.");
-                logger.error("Failed to connect to the server. Contact administrator.");
-            }
-        }
-        return "getProduct";
+        Thread.sleep(50 + (int) (Math.random() * 100));
+            if (!(response.getStatusCode() == HttpStatus.OK)) {
+                logger.info("Desired products " + Thread.currentThread().getName() + " not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
+
+            } else
+                logger.info("Product " + service.getResponseFromStorehouse(response).get() + "has been sent to " + Thread.currentThread().getName());
+        return ResponseEntity.ok(service.getProductFromRequest(service.getResponseFromStorehouse(response).get()));
     }
 
     @RequestMapping(method = {RequestMethod.POST, RequestMethod.GET}, value = "/1000purchases")
