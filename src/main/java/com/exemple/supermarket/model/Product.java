@@ -1,12 +1,17 @@
 package com.exemple.supermarket.model;
 
-import java.time.LocalDateTime;
+import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Component
 public class Product {
     private String name;
     private int quantity;
     private LocalDateTime dateOfManufacture;
     private int daysToExpire;
+
 
     public String getName() {
         return name;
@@ -38,5 +43,15 @@ public class Product {
 
     public void setDaysToExpire(int daysToExpire) {
         this.daysToExpire = daysToExpire;
+    }
+
+    @Override
+    public String toString() {
+        return "Product{" +
+                ", name='" + name + '\'' +
+                ", quantity=" + quantity +
+                ", dateOfManufacture=" + dateOfManufacture +
+                ", daysToExpire=" + daysToExpire +
+                '}';
     }
 }
