@@ -1,51 +1,47 @@
 package com.exemple.supermarket.controllers;
 
-import com.exemple.supermarket.exception.ProductNotfoundException;
-import com.exemple.supermarket.service.SuperMarketService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.exemple.supermarket.models.request.CheckQuantityOfProductRequest;
+import com.exemple.supermarket.models.request.MultiProductRequest;
+import com.exemple.supermarket.models.request.RefundRequest;
+import com.exemple.supermarket.models.request.SingleProductRequest;
+import com.exemple.supermarket.service.SupermarketService;
+import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
-
-@Controller
+@RestController
+@Api(description = "Super Market")
 public class MainController {
     @Autowired
-    SuperMarketService service;
+    private SupermarketService service;
 
-    Logger logger = LoggerFactory.getLogger(MainController.class);
-    private int count = 0;
-
-    @RequestMapping(method = {RequestMethod.POST, RequestMethod.GET}, value = "/getProductFromStorehouse")
-    public synchronized ResponseEntity sendRequestToStorehouse(@RequestParam("name") String name, @RequestParam("quantity") String quantity) throws InterruptedException, JsonProcessingException {
-        count++;
-        Thread.currentThread().setName("Buyer " + count);
-
-        ResponseEntity<String> response = service.sendRequestToStorehouse(name, quantity);
-
-        Thread.sleep(50 + (int) (Math.random() * 100));
-            if (!(response.getStatusCode() == HttpStatus.OK)) {
-                logger.info("Desired products " + Thread.currentThread().getName() + " not found");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
-
-            } else
-                logger.info("Product " + service.getResponseFromStorehouse(response).get() + "has been sent to " + Thread.currentThread().getName());
-        return ResponseEntity.ok(service.getProductFromRequest(service.getResponseFromStorehouse(response).get()));
+    @PostMapping("/buySingleProduct")
+    @ResponseBody
+    public ResponseEntity<?> buySingleProduct(@RequestBody(required = false) SingleProductRequest request) {
+        service.buySingleProduct(request);
+        return service.response();
     }
 
-    @RequestMapping(method = {RequestMethod.POST, RequestMethod.GET}, value = "/1000purchases")
-    public String send1000PurchasesRequest() {
-
-        for (int i = 0; i < 1000; i++) {
-            service.putRandomParamInRequest(i);
-        }
-
-        return "done";
+    @PostMapping("/buyMultipleProducts")
+    @ResponseBody
+    public ResponseEntity<?> buyMultipleProducts(@RequestBody MultiProductRequest request) {
+        service.buyMultiProducts(request);
+        return service.response();
     }
+
+    @PostMapping("/checkProductQuantity")
+    @ResponseBody
+    public ResponseEntity<?> checkProductQuantity(@RequestBody(required = false) CheckQuantityOfProductRequest request) {
+        service.checkQuantity(request);
+        return service.response();
+    }
+
+    @PostMapping("/refundProduct")
+    @ResponseBody
+    public ResponseEntity<?> returnProduct(@RequestBody RefundRequest refund) {
+        service.returnProduct(refund);
+        return service.response();
+    }
+
 }
